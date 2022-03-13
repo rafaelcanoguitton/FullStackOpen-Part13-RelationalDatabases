@@ -23,7 +23,7 @@ router.post("/", async (req, res, next) => {
     next(error);
   }
 });
-router.delete("/:id", blogFinder, async (req, res) => {
+router.delete("/:id", blogFinder, async (req, res, next) => {
   try {
     const blog = await Blog.destroy({
       where: {
@@ -35,11 +35,11 @@ router.delete("/:id", blogFinder, async (req, res) => {
     next(error);
   }
 });
-router.put("/:id", blogFinder, async (req, res) => {
+router.put("/:id", blogFinder, async (req, res, next) => {
   try {
     if (req.blog) {
       req.blog.likes += 1;
-      await blog.save();
+      await req.blog.save();
       res.json({ likes: blog.likes });
     }
     res.status(404).end();
