@@ -1,7 +1,5 @@
 const router = require("express").Router();
-
-const { user } = require("pg/lib/defaults");
-const { User } = require("../models");
+const { User, Blog } = require("../models");
 
 const userFinder = async (req, res, next) => {
   req.user = await User.findOne({
@@ -23,7 +21,9 @@ router.post("/", async (req, res, next) => {
 
 router.get("/", async (req, res, next) => {
   try {
-    const users = await User.findAll();
+    const users = await User.findAll({
+      include: { model: Blog, attributes: { exclude: ["userId"] } },
+    });
     res.json(JSON.stringify(users));
   } catch (error) {
     next(error);

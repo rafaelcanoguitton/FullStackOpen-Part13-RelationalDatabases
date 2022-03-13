@@ -1,6 +1,4 @@
 const router = require("express").Router();
-
-const { response } = require("express");
 const { Blog, User } = require("../models");
 
 const blogFinder = async (req, res, next) => {
@@ -26,7 +24,12 @@ const tokenExtractor = (req, res, next) => {
 
 router.get("/", async (req, res, next) => {
   try {
-    const blogs = await Blog.findAll();
+    const blogs = await Blog.findAll({
+      attributes: {
+        exclude: ["userId"],
+        include: { model: User, attributes: ["name"] },
+      },
+    });
     res.json(JSON.stringify(blogs));
   } catch (error) {
     next(error);
@@ -60,10 +63,7 @@ router.put("/:id", blogFinder, tokenExtractor, async (req, res, next) => {
     if (req.blog) {
       const user = await User.findByPk(req.decodedToken.id);
       if (req.blog.userId != user.id) {
-        return response
-          .status(400)
-          .json({ error: "That blog isn't yours!" })
-          .end();
+        return res.status(400).json({ error: "That blog isn't yours!" }).end();
       }
       req.blog.likes += 1;
       await req.blog.save();
