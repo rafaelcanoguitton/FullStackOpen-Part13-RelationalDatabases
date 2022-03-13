@@ -12,6 +12,10 @@ User.init(
     username: {
       type: DataTypes.TEXT,
       allowNull: false,
+      unique: true,
+      validate: {
+        isEmail: true,
+      },
     },
     name: {
       type: DataTypes.TEXT,
