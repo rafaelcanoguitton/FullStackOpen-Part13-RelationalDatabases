@@ -1,10 +1,27 @@
 const router = require("express").Router();
 
-const { Blog } = require("../models");
+const { response } = require("express");
+const { Blog, User } = require("../models");
 
 const blogFinder = async (req, res, next) => {
   req.blog = await Blog.findByPk(req.params.id);
   next();
+};
+
+const tokenExtractor = (req, res, next) => {
+  const authorization = req.get("authorization");
+  if (authorization && authorization.toLowerCase().startsWith("bearer ")) {
+    try {
+      console.log(authorization.substring(7));
+      console.log(SECRET);
+      req.decodedToken = jwt.verify(authorization.substring(7), SECRET);
+    } catch (error) {
+      console.log(error);
+      return res.status(401).json({ error: "token invalid" });
+    }
+  } else {
+    return res.status(401).json({ error: "token missing" });
+  }
 };
 
 router.get("/", async (req, res, next) => {
@@ -15,19 +32,22 @@ router.get("/", async (req, res, next) => {
     next(error);
   }
 });
-router.post("/", async (req, res, next) => {
+router.post("/", tokenExtractor, async (req, res, next) => {
   try {
-    const blog = await Blog.create(req.body);
+    const user = await User.findByPk(req.decodedToken.id);
+    const blog = await Blog.create({ ...req.body, userId: user.id });
     res.json(JSON.stringify(blog));
   } catch (error) {
     next(error);
   }
 });
-router.delete("/:id", blogFinder, async (req, res, next) => {
+router.delete("/:id", blogFinder, tokenExtractor, async (req, res, next) => {
   try {
+    const user = await User.findByPk(req.decodedToken.id);
     const blog = await Blog.destroy({
       where: {
         id: req.params.id,
+        id_user: user.id,
       },
     });
     res.json(JSON.stringify(blog));
@@ -35,9 +55,16 @@ router.delete("/:id", blogFinder, async (req, res, next) => {
     next(error);
   }
 });
-router.put("/:id", blogFinder, async (req, res, next) => {
+router.put("/:id", blogFinder, tokenExtractor, async (req, res, next) => {
   try {
     if (req.blog) {
+      const user = await User.findByPk(req.decodedToken.id);
+      if (req.blog.userId != user.id) {
+        return response
+          .status(400)
+          .json({ error: "That blog isn't yours!" })
+          .end();
+      }
       req.blog.likes += 1;
       await req.blog.save();
       res.json({ likes: blog.likes });
