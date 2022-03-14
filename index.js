@@ -4,6 +4,9 @@ const app = express();
 const { PORT } = require("./util/config");
 const { connectToDb } = require("./util/db");
 
+const { Blog } = require("./models");
+const { sequelize } = require("./util/db");
+
 const blogsRouter = require("./controllers/blogs");
 const userRouter = require("./controllers/users");
 
@@ -19,7 +22,23 @@ const errorHandler = (error, request, response, next) => {
 };
 
 app.use(errorHandler);
-
+app.get("/api/authors", (req, res, next) => {
+  try {
+    //group by author and aggregate count of blogs
+    const authors = Blog.findAll({
+      group: ["author"],
+      attributes: [
+        [sequelize.fn("COUNT", sequelize.col("author")), "articles"],
+        "author",
+        "likes",
+      ],
+      order: [["likes", "DESC"]],
+    });
+    res.json(JSON.stringify(authors));
+  } catch (error) {
+    next(error);
+  }
+});
 const start = async () => {
   await connectToDb();
   app.listen(PORT, () => {
