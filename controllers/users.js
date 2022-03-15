@@ -14,6 +14,11 @@ const userFinder = async (req, res, next) => {
         through: {
           attributes: [],
         },
+        include: {
+          model: ReadingList,
+          as: "readingLists",
+          attributes: { exclude: ["read", "id"] },
+        },
       },
     ],
   });
