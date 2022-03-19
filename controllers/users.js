@@ -54,5 +54,33 @@ router.put("/:username", userFinder, async (req, res, next) => {
     next(error);
   }
 });
-
+router.get("/:id", async (req, res, next) => {
+  try {
+    const where = {};
+    if (req.query.read) {
+      where.read = req.query.read;
+    }
+    const user = await User.findByPk(req.params.id, {
+      include: [
+        {
+          model: Blog,
+          as: "readings",
+          attributes: { exclude: ["userId"] },
+          through: {
+            attributes: ["id", "read"],
+            where,
+          },
+          include: {
+            model: ReadingList,
+            as: "readingLists",
+            attributes: { exclude: ["read", "id"] },
+          },
+        },
+      ],
+    });
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
 module.exports = router;
