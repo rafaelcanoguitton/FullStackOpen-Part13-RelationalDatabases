@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const { Op } = require("sequelize");
-const { Blog, User } = require("../models");
+const { Blog, User, Session } = require("../models");
 
 const blogFinder = async (req, res, next) => {
   req.blog = await Blog.findByPk(req.params.id);
@@ -49,6 +49,10 @@ router.post("/", tokenExtractor, async (req, res, next) => {
   try {
     const user = await User.findByPk(req.decodedToken.id);
     const blog = await Blog.create({ ...req.body, userId: user.id });
+    const session = await Session.findByPk(req.decodedToken.sessionId);
+    if (!session) {
+      return res.status(401).json({ error: "token invalid" });
+    }
     res.json(JSON.stringify(blog));
   } catch (error) {
     next(error);
@@ -63,6 +67,10 @@ router.delete("/:id", blogFinder, tokenExtractor, async (req, res, next) => {
         id_user: user.id,
       },
     });
+    const session = await Session.findByPk(req.decodedToken.sessionId);
+    if (!session) {
+      return res.status(401).json({ error: "token invalid" });
+    }
     res.json(JSON.stringify(blog));
   } catch (error) {
     next(error);
@@ -74,6 +82,10 @@ router.put("/:id", blogFinder, tokenExtractor, async (req, res, next) => {
       const user = await User.findByPk(req.decodedToken.id);
       if (req.blog.userId != user.id) {
         return res.status(400).json({ error: "That blog isn't yours!" }).end();
+      }
+      const session = await Session.findByPk(req.decodedToken.sessionId);
+      if (!session) {
+        return res.status(401).json({ error: "token invalid" });
       }
       req.blog.likes += 1;
       await req.blog.save();

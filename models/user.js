@@ -21,6 +21,11 @@ User.init(
       type: DataTypes.TEXT,
       allowNull: false,
     },
+    disabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    },
   },
   {
     sequelize,
